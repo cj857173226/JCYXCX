@@ -7,7 +7,6 @@
     "pages/knowledge/knowledge",
     "pages/knowledgeDetails/knowledgeDetails",
     "pages/reportDetails/reportDetails",
-    "pages/ad/ad",
     "pages/reportNote/reportNote"
   ],
   "window":{

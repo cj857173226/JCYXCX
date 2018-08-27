@@ -25,7 +25,7 @@
       </view>
       <view class="weui-cell__bd " style='padding-left:30rpx;'>
         <image bindtap='getLocation' class='location-icon' src='/images/reportEntry/location.png'></image>
-        <input class="weui-input" indinput ="locationInput" value='{{location}}'/>
+        <input class="weui-input" indinput ="locationInput" placeholder='注：地址中请包含城市名称' value='{{location}}'/>
       </view>
   </view>
     <view class='input-group'>

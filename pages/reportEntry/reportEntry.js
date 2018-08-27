@@ -6,6 +6,9 @@ var http = require("../../common/http.js");
 // 引入腾讯地图
 var QQMapWX = require('../../qqmap-wx-jssdk.min.js');
 var qqmapsdk;
+qqmapsdk = new QQMapWX({
+  key: 'ZNIBZ-ZTKAJ-FRFFJ-FLOMH-7KYWZ-5KF3Z' // 必填
+});
 Page({
 
   /**
@@ -27,7 +30,8 @@ Page({
     imgStatus: false,
     videoStatus: false,
     videoCount:0, //视频上传计数
-    imgCount:0    //图片上传计数
+    imgCount:0,    //图片上传计数
+    jwd:'',//经纬度
   },
   /**
    * 生命周期函数--监听页面加载
@@ -122,7 +126,6 @@ Page({
   //picker选择框
   bindPickerChange: function (e) {
     var _this = this;
-    console.log('picker发送选择改变，携带值为', e.detail.value)
     this.setData({
       reportType: _this.data.reportTypeList[e.detail.value]
     })
@@ -130,10 +133,6 @@ Page({
   //获取地理位置
   getLocation: function () {
     var _this = this;
-    qqmapsdk = new QQMapWX({
-      key: 'ZNIBZ-ZTKAJ-FRFFJ-FLOMH-7KYWZ-5KF3Z' // 必填
-    });
-    
     wx.getSetting({
       success: (res) => {
         if (!res.authSetting['scope.userLocation']) {
@@ -368,18 +367,54 @@ Page({
         duration: 1500
       })
     }else {
-      _this.setData({
-        isSend:true
-      });
-      if(_this.data.imgs.length > 0 || _this.data.videos.length > 0){
-        _this.uploadFile()
-        
-      }else {
-        _this.sendRequest()
+    
+      if (this.data.location != ''){
+        // 解析地址 获取经纬度
+        qqmapsdk.geocoder({
+          address: _this.data.location,
+          success: function (res) {
+            if(res.status == 0 ){
+              _this.setData({
+                jwd: res.result.location.lng + ',' + res.result.location.lat
+              })
+            }else{
+              _this.setData({
+                jwd:''
+              })
+            }
+          },
+          fail: function (res) {
+            _this.setData({
+              jwd:''
+            })
+          },
+          complete: function (res) {
+            _this.setData({
+              isSend: true
+            });
+            if (_this.data.imgs.length > 0 || _this.data.videos.length > 0) {
+              _this.uploadFile()
+
+            } else {
+              wx.showLoading({
+                title: '正在提交',
+                mask:true,
+              })
+              _this.sendRequest()
+            }
+          }   
+        });
+      }else{
+        _this.setData({
+          isSend: true
+        });
+        if (_this.data.imgs.length > 0 || _this.data.videos.length > 0) {
+          _this.uploadFile()
+
+        } else {
+          _this.sendRequest()
+        }
       }
-
-  
-
      
     }
   },
@@ -484,7 +519,9 @@ Page({
 
   // 提交表单
    sendRequest:function(){
+     console.log(this.data.jwd)
      var _this = this;
+     
     http.req('/api/WxClue/Add', 'POST', {
       XSLB: _this.data.reportType.trim(), //举报门类
       JBNR: _this.data.reportContent.trim(), //举报内容
@@ -493,6 +530,7 @@ Page({
       SFDD: _this.data.location, //事发地点
       JBRXM: _this.data.userName, //举报人姓名
       JBRLXFS: _this.data.contactInfo, //举报人联系方式
+      JWD: _this.data.jwd,//事发地点经纬度
     }, function (res) {
       if (res.code == 0) {
         _this.setData({
@@ -501,7 +539,8 @@ Page({
           videos: [],
           location: '',
           userName: '',
-          contactInfo: ''
+          contactInfo: '',
+          jwd:'',
         });
         wx.hideLoading();
         wx.showToast({
@@ -533,6 +572,7 @@ Page({
         image: '/images/index/error.png',
         duration: 2000
       })
+      
     });
   },
    // 跳转举报说明页面
